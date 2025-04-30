@@ -22,12 +22,16 @@ Earn Verified Accredible Badge.
 
 ### 1.3 Lab Access Information
 The Labs doesn't start automatically immediately after purchase.
-Please wait for at least 48 Hrs (Business Days) to get Lab Access request approved
-We provide Lab access update only on Weekdays
+
+Please wait for at least 48 Hrs (Business Days) to get Lab Access request approved.
+
+We provide Lab access update only on Weekdays.
+
 We provide support on weekdays from 10 AM to 7 PM IST.  Support is generally slow on weekends. The average responding time to clear queries are 24-48 hrs based on the support queries.
 
 ### 1.4 Exam Details
 Candidates scheduling exams with our support team are granted two attempts for exam.
+
 We recommend completing this course within 2 years from the date of enrollment because as per our policy we upgrade our offerings every 3 years.
 
 ## 2. Course Material
