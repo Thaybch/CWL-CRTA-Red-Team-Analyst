@@ -1,11 +1,12 @@
 
-### 1- BRT-Intro#1
 
-Discover the fundamentals of Red Teaming, including its purpose and importance in cybersecurity. Learn how Red Teams simulate real-world attacks to strengthen organizational defenses.
-
-
-
-### 2- BRT-Intro2
-
-
-### 3- BRT-Intro3
+### 1.1  What is Red Teaming ?
+### 1.2  Red Team Attack Lifecycle (Phases) 
+### 1.3  Red Team Infrastructure (Nomenclature)
+### 1.4  Enterprise Environment Overview
+### 1.5  Technologies Exploitation in Red Teaming
+  #### 1.5.1  Web Technology
+  #### 1.5.2  Network Technology
+  #### 1.5.3  Cloud Technology     
+  #### 1.5.4  Physical Red Teaming
+  #### 1.5.5  Wireless
