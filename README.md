@@ -2,16 +2,23 @@
 
 ## 1. Course Introduction
 ### 1.1 Course Objective
-The Red Team Analyst (CRTA) course is tailored for beginners in offensive information security, providing a fully hands-on experience. Participants will receive comprehensive study materials, including practice labs, videos, and PDF manuals, to enhance their learning. The course focuses on cultivating an understanding of the mindset and Tactics, Techniques, and Procedures (TTPs)
+The Red Team Analyst (CRTA) course is tailored for beginners in offensive information security, providing a fully hands-on experience.
+Participants will receive comprehensive study materials, including practice labs, videos, and PDF manuals, to enhance their learning. The course focuses on cultivating an understanding of the mindset and Tactics, Techniques, and Procedures (TTPs)
 
 ### 1.2 Certification Process
-Enroll in CRTA On demand Course
-Complete the Study Materials [Videos +PDF]
-Schedule the 30 Days Lab Access by logging in Labs portal (CCSP
-You can directly schedule a CRTA exam from the CW Labs Portal 
-Share the detailed exam report within next 24 Hrs to email adress
-Clear minimum passing criteria of 70%
-Earn Verified Accredible Badge
+Enroll in CRTA On demand Course.
+
+Complete the Study Materials [Videos +PDF].
+
+Schedule the 30 Days Lab Access by logging in Labs portal.
+
+You can directly schedule a CRTA exam from the CW Labs Portal .
+
+Share the detailed exam report within next 24 Hrs to email adress.
+
+Clear minimum passing criteria of 70%.
+
+Earn Verified Accredible Badge.
 
 ### 1.3 Lab Access Information
 The Labs doesn't start automatically immediately after purchase.
